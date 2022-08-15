@@ -12,6 +12,9 @@ import (
 type item = domain.Item
 type repo = domain.Repository
 
+// Cache хранит все текущие объекты БД в памяти,
+// обновляет по заданному интервалу, а также когда
+// происходят операции удаления или обновления.
 type Cache struct {
 	mu     sync.RWMutex
 	data   []item // здесь можно исользовать мапу, но обойдемся слайсом
@@ -19,6 +22,7 @@ type Cache struct {
 	logger *log.Logger
 }
 
+// New возвращает новый объект кэша.
 func New(ctx context.Context, db repo, logger *log.Logger, updInterval time.Duration) *Cache {
 	c := Cache{
 		repo:   db,
@@ -53,12 +57,15 @@ func (c *Cache) all(ctx context.Context) []item {
 	return out
 }
 
+// len возвращает количество элементов в кэше.
 func (c *Cache) len() int {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 	return len(c.data)
 }
 
+// get производит поиск объекта в кэше по id
+// за линейное время.
 func (c *Cache) get(id int64) item {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
