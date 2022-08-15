@@ -1,9 +1,3 @@
-PUBLIC_REGISTRY_HOST=docker.io
-PUBLIC_REGISTRY_OWNER=rtemka
-PUBLIC_REGISTRY_APP_NAME=authservice
-
-CI_COMMIT_REF_NAME=latest
-
 all: build test lint
 
 deps:
@@ -23,12 +17,3 @@ lint:
 
 clean:
 	rm -rf ./bin
-
-image: image_build image_push
-
-image_build:
-	@docker build -t ${PUBLIC_REGISTRY_HOST}/${PUBLIC_REGISTRY_OWNER}/${PUBLIC_REGISTRY_APP_NAME}:${CI_COMMIT_REF_NAME} ./
-
-image_push:
-	@docker push ${PUBLIC_REGISTRY_HOST}/${PUBLIC_REGISTRY_OWNER}/${PUBLIC_REGISTRY_APP_NAME}:${CI_COMMIT_REF_NAME}
-	@echo "${PUBLIC_REGISTRY_HOST}/${PUBLIC_REGISTRY_OWNER}/${PUBLIC_REGISTRY_APP_NAME} image published. Version ${CI_COMMIT_REF_NAME}"
