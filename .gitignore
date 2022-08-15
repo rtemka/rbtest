@@ -1,0 +1,8 @@
+tmp/
+bin/
+*.txt
+/*.pem
+/*.pfx
+/*.crt
+/*.cer
+/*.der
