@@ -24,7 +24,7 @@ const (
 	dbEnv   = "DB_URL"
 )
 
-const cacheUpdInterval = 5 * time.Minute
+const cacheUpdInterval = 5 * time.Second
 
 func main() {
 	if err := run(); err != nil {
@@ -72,8 +72,8 @@ func run() error {
 }
 
 // cancellation отслеживает сигналы прерывания и,
-// если они получены, "мягко" отменяет контекст приложения и
-// гасит серверы.
+// если они получены, отменяет контекст приложения и
+// "мягко" гасит серверы.
 func cancelation(cancel context.CancelFunc, servers []*http.Server) {
 	// ловим сигналов прерывания, типа CTRL-C
 	stop := make(chan os.Signal, 1)
