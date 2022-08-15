@@ -30,7 +30,7 @@ func New(ctx context.Context, db repo, logger *log.Logger, updInterval time.Dura
 	return &c
 }
 
-// set обновляет кэш целиком, ошибка для удобства
+// update обновляет кэш целиком, ошибка для удобства
 // логируется.
 func (c *Cache) update(ctx context.Context) {
 
@@ -46,8 +46,8 @@ func (c *Cache) update(ctx context.Context) {
 
 // all возвращает полную копию кэша для дальнешего использования.
 func (c *Cache) all(ctx context.Context) []item {
-	var out []item
 	c.mu.RLock()
+	var out = make([]item, len(c.data))
 	_ = copy(out, c.data)
 	c.mu.RUnlock()
 	return out
@@ -74,9 +74,9 @@ func (c *Cache) get(id int64) item {
 // cacheLoader обновляет кэш каждый раз через interval.
 func (c *Cache) cacheLoader(ctx context.Context, interval time.Duration) {
 	upd := func() {
-		ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+		chc, cancel := context.WithTimeout(ctx, 5*time.Second)
 		defer cancel()
-		c.update(ctx)
+		c.update(chc)
 	}
 
 	upd() // первый раз сразу
@@ -120,7 +120,7 @@ func (c *Cache) DeleteItem(ctx context.Context, id int64) error {
 	if err != nil {
 		return err
 	}
-	go c.update(ctx)
+	go c.update(context.Background())
 	return nil
 }
 
@@ -130,6 +130,6 @@ func (c *Cache) UpdateItem(ctx context.Context, item item) error {
 	if err != nil {
 		return err
 	}
-	go c.update(ctx)
+	go c.update(context.Background())
 	return nil
 }
