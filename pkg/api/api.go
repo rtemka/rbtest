@@ -55,6 +55,7 @@ func (api *API) endpoints() {
 	)
 
 	api.router.HandleFunc("/items", api.itemsHandlerList()).Methods(http.MethodGet, http.MethodOptions)
+	api.router.HandleFunc("/items/{id}", api.itemsHandlerGet()).Methods(http.MethodGet, http.MethodOptions)
 	api.router.HandleFunc("/items/{id}", api.itemsHandlerDelete()).Methods(http.MethodDelete, http.MethodOptions)
 	api.router.HandleFunc("/items", api.itemsHandlerPut()).Methods(http.MethodPut, http.MethodOptions)
 }
@@ -113,6 +114,7 @@ func (api *API) itemsHandlerList() http.HandlerFunc {
 		items, err := api.repo.Items(ctx)
 		if err != nil {
 			api.WriteJSONError(w, ErrInternal, http.StatusInternalServerError)
+			return
 		}
 		api.WriteJSON(w, items, http.StatusOK)
 	}
@@ -126,6 +128,7 @@ func (api *API) itemsHandlerDelete() http.HandlerFunc {
 		id, err := strconv.ParseInt(s, 10, 64)
 		if err != nil {
 			api.WriteJSONError(w, fmt.Errorf("%w: bad 'id' path parameter", ErrBadInput), http.StatusBadRequest)
+			return
 		}
 
 		ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
@@ -134,9 +137,34 @@ func (api *API) itemsHandlerDelete() http.HandlerFunc {
 		err = api.repo.DeleteItem(ctx, id)
 		if err != nil {
 			api.WriteJSONError(w, ErrInternal, http.StatusInternalServerError)
+			return
 		}
 
-		api.WriteJSON(w, map[string]string{"deleted": fmt.Sprintf("{\"id\": %d}", id)}, http.StatusOK)
+		api.WriteJSON(w, map[string]any{"deleted": map[string]int64{"id": id}}, http.StatusOK)
+	}
+}
+
+// itemsHandlerDelete получает из БД по id.
+func (api *API) itemsHandlerGet() http.HandlerFunc {
+
+	return func(w http.ResponseWriter, r *http.Request) {
+		s := mux.Vars(r)["id"]
+		id, err := strconv.ParseInt(s, 10, 64)
+		if err != nil {
+			api.WriteJSONError(w, fmt.Errorf("%w: bad 'id' path parameter", ErrBadInput), http.StatusBadRequest)
+			return
+		}
+
+		ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
+		defer cancel()
+
+		item, err := api.repo.Item(ctx, id)
+		if err != nil {
+			api.WriteJSONError(w, ErrInternal, http.StatusInternalServerError)
+			return
+		}
+
+		api.WriteJSON(w, item, http.StatusOK)
 	}
 }
 
@@ -147,8 +175,9 @@ func (api *API) itemsHandlerPut() http.HandlerFunc {
 
 		var item item
 		err := json.NewDecoder(r.Body).Decode(&item)
-		if err != nil {
+		if err != nil || item.ID == 0 {
 			api.WriteJSONError(w, fmt.Errorf("%w: bad JSON string in request body", ErrBadInput), http.StatusBadRequest)
+			return
 		}
 
 		ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
@@ -157,9 +186,9 @@ func (api *API) itemsHandlerPut() http.HandlerFunc {
 		err = api.repo.UpdateItem(ctx, item)
 		if err != nil {
 			api.WriteJSONError(w, ErrInternal, http.StatusInternalServerError)
+			return
 		}
 
-		api.WriteJSON(w, map[string]string{"updated": fmt.Sprintf("{\"id\": %d}", item.ID)}, http.StatusOK)
-
+		api.WriteJSON(w, map[string]any{"updated": map[string]int64{"id": item.ID}}, http.StatusOK)
 	}
 }
